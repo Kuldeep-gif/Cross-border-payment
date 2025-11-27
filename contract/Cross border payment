@@ -1,0 +1,62 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+
+/**
+ * @title CrossBorderPayment
+ * @dev A simple contract that enables cross-border payments with
+ *      basic remittance functionality.
+ */
+contract Project {
+    struct Payment {
+        address sender;
+        address recipient;
+        uint256 amount;
+        uint256 timestamp;
+    }
+
+    Payment[] public payments;
+
+    event PaymentSent(address indexed sender, address indexed recipient, uint256 amount);
+    event Withdrawal(address indexed recipient, uint256 amount);
+
+    mapping(address => uint256) public balances;
+
+    /**
+     * @dev Allows a user to send funds to a recipient’s balance.
+     */
+    function sendPayment(address _recipient) external payable {
+        require(msg.value > 0, "Payment must be greater than zero");
+        require(_recipient != address(0), "Invalid recipient");
+
+        balances[_recipient] += msg.value;
+
+        payments.push(Payment({
+            sender: msg.sender,
+            recipient: _recipient,
+            amount: msg.value,
+            timestamp: block.timestamp
+        }));
+
+        emit PaymentSent(msg.sender, _recipient, msg.value);
+    }
+
+    /**
+     * @dev Allows a recipient to withdraw their balance.
+     */
+    function withdraw() external {
+        uint256 amount = balances[msg.sender];
+        require(amount > 0, "No funds to withdraw");
+
+        balances[msg.sender] = 0;
+        payable(msg.sender).transfer(amount);
+
+        emit Withdrawal(msg.sender, amount);
+    }
+
+    /**
+     * @dev Returns total number of payments recorded.
+     */
+    function getPaymentCount() external view returns (uint256) {
+        return payments.length;
+    }
+}
